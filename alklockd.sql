@@ -62,11 +62,15 @@ DECLARE
     testee ALIAS FOR $1;
     container ALIAS FOR $2;
 BEGIN
-    RETURN CASE WHEN 0 < (
-        SELECT COUNT(*)
+    RETURN CASE WHEN (
+        SELECT 0 < COUNT(*)
         FROM alklockd_range AS r JOIN alklockd_membership AS m ON r.id=m.range_id
         WHERE m.group_id=container
             AND r.start <= testee AND testee <= COALESCE(r.stop, r.start)
+    ) OR (
+        SELECT 0 < COUNT(*)
+        FROM alklockd_daytime
+        WHERE group_id=container AND alarm_timestamp::date = testee
     ) THEN NOT (
         SELECT COALESCE(bool_or(alklockd_in_group(testee, overrider)), FALSE)
         FROM alklockd_override
